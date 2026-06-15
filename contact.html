@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SEESEC — Corporate Infrastructure Network Map</title>
+<style>
+/* NO EXTERNAL FONTS, NO GOOGLE APIs, NO EXTERNAL REQUESTS */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#02060d;
+  --surface:#060d1a;
+  --surface2:#0a1528;
+  --border:rgba(0, 229, 192, 0.1);
+  --accent:#00e5c0;
+  --accent2:#0099ff;
+  --text:#e2eaf8;
+  --muted:#6b7fa0;
+  --muted2:#4a5a78;
+}
+
+html,body{
+  min-height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', 'Roboto', sans-serif;
+  overflow-x:hidden;
+}
+
+.page{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:0 24px 80px;
+  position:relative;
+}
+
+.page::before{
+  content:'';position:fixed;inset:0;
+  background-image: 
+    linear-gradient(rgba(0, 229, 192, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 192, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 60% 50% at 50% 50%, #000 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 50%, #000 40%, transparent 100%);
+  pointer-events:none;z-index:0;
+}
+
+nav{
+  width:100%;max-width:1200px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:28px 0 0;
+  position:relative;z-index:10;
+}
+.logo{
+  font-weight:800;
+  font-size:1.3rem;
+  letter-spacing:.04em;
+  color:var(--text);
+  text-decoration:none;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.logo-mark{
+  width:32px;height:32px;border-radius:8px;
+  background:linear-gradient(135deg,var(--accent2),var(--accent));
+  display:flex;align-items:center;justify-content:center;
+  font-size:.75rem;font-weight:800;color:#03080f;
+  font-family: monospace;
+}
+.nav-links{display:flex;gap:32px;}
+.nav-links a{
+  color:var(--muted);text-decoration:none;font-size:.85rem;
+  letter-spacing:.02em;transition:color .2s;
+  font-weight:500;
+}
+.nav-links a:hover{color:var(--text);}
+.nav-links a.active{color:var(--accent);}
+
+.hero{
+  text-align:center;
+  margin:72px 0 48px;
+  position:relative;z-index:2;
+  max-width:680px;
+}
+.hero-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid rgba(0,229,192,.25);
+  border-radius:100px;padding:5px 14px 5px 10px;
+  font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:24px;
+  background:rgba(0,229,192,.05);
+  font-weight:600;
+  font-family: monospace;
+}
+.hero-tag::before{
+  content:'';width:6px;height:6px;border-radius:50%;
+  background:var(--accent);animation:tagPulse 2s infinite;
+}
+@keyframes tagPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.hero h1{
+  font-size:clamp(2.2rem,5vw,3.2rem);
+  font-weight:700;line-height:1.1;
+  letter-spacing:-.03em;
+  margin-bottom:20px;
+}
+.hero h1 em{
+  font-style:normal;
+  background:linear-gradient(90deg,var(--accent2) 0%,var(--accent) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero p{
+  font-size:1.05rem;color:var(--muted);
+  line-height:1.75;font-weight:400;
+}
+
+.main-grid{
+  display:grid;
+  grid-template-columns:1fr 420px;
+  gap:28px;
+  width:100%;max-width:1200px;
+  position:relative;z-index:2;
+}
+
+.map-panel{
+  position:relative;
+  border-radius:24px;
+  border:1px solid rgba(255, 255, 255, 0.05);
+  background: #040a14;
+  overflow:hidden;
+  min-height:580px;
+  transition:all 0.3s;
+  box-shadow: 0 30px 60px -15px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.map-container{
+  width:100%;
+  position:relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #030914;
+}
+
+#indiaMapCanvas{
+  display:block;
+  width:100%;
+  height:auto;
+  background: transparent;
+  cursor: pointer;
+}
+
+.map-overlay{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background: radial-gradient(circle at 50% 30%, rgba(0, 153, 255, 0.05) 0%, transparent 70%);
+}
+
+.map-badge{
+  position:absolute;
+  bottom:20px;
+  left:20px;
+  background:rgba(4, 10, 20, 0.95);
+  border:1px solid rgba(255,255,255,0.08);
+  border-left:3px solid var(--accent);
+  border-radius:14px;
+  padding:14px 18px;
+  backdrop-filter:blur(20px);
+  z-index:12;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  min-width: 260px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.map-badge:hover {
+  border-color: rgba(0, 229, 192, 0.4);
+  transform: translateY(-2px);
+}
+.map-badge .gb-label{
+  font-size:.65rem;
+  color:var(--accent);
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  margin-bottom:6px;
+  font-weight:700;
+  font-family: monospace;
+}
+.map-badge .gb-val{
+  font-size:1rem;
+  font-weight:700;
+  color:var(--text);
+}
+.map-badge .gb-sub{
+  font-size:.68rem;
+  color:var(--muted);
+  margin-top:4px;
+  font-family: monospace;
+}
+
+.map-hint{
+  position:absolute;
+  bottom:20px;
+  right:20px;
+  background:rgba(4, 10, 20, 0.7);
+  backdrop-filter:blur(10px);
+  padding:5px 12px;
+  border-radius:40px;
+  font-size:.65rem;
+  color:var(--muted);
+  pointer-events:none;
+  z-index:12;
+  font-family: monospace;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.contact-panel{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+.info-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:20px;padding:20px;
+  display:flex;gap:14px;align-items:flex-start;
+  transition:all .3s;
+  cursor: pointer;
+}
+.info-card:hover, .info-card.active-card{
+  border-color:rgba(0,229,192,.35);
+  background:rgba(0,229,192,.02);
+}
+.ic-icon{
+  width:40px;height:40px;border-radius:12px;flex-shrink:0;
+  background:rgba(0,229,192,.04);
+  border:1px solid rgba(0,229,192,.15);
+  display:flex;align-items:center;justify-content:center;
+}
+.ic-icon svg{width:18px;height:18px;stroke:var(--accent);fill:none;stroke-width:1.8;}
+.ic-label{
+  font-size:.65rem;
+  color:var(--accent);
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  margin-bottom:4px;
+  font-weight:600;
+  font-family: monospace;
+}
+.ic-val{
+  font-size:.9rem;
+  color:var(--text);
+  font-weight:600;
+}
+.ic-meta{
+  font-size:.7rem;
+  color:var(--muted);
+  margin-top:3px;
+  font-family: monospace;
+}
+
+.hours-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:22px;
+}
+.hc-title{
+  font-size:.68rem;
+  color:var(--accent2);
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  margin-bottom:14px;
+  font-weight:700;
+  font-family: monospace;
+}
+.hc-row{display:flex;justify-content:space-between;margin-bottom:10px;}
+.hc-day{font-size:.85rem;color:var(--text);}
+.hc-time{font-size:.85rem;color:var(--accent);font-weight:700;font-family: monospace;}
+
+.bottom-strip{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:1px;background:rgba(255,255,255,0.05);
+  width:100%;max-width:1200px;
+  border:1px solid rgba(255,255,255,0.05);border-radius:20px;
+  overflow:hidden;margin-top:32px;
+}
+.bs-item{
+  background:var(--surface);padding:24px 20px;
+  text-align:center;
+}
+.bs-val{
+  font-size:1.8rem;
+  font-weight:800;
+  letter-spacing:-.04em;
+  margin-bottom:4px;
+  background:linear-gradient(90deg,var(--accent2),var(--accent));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.bs-label{font-size:.7rem;color:var(--muted);}
+
+@media(max-width:900px){
+  .main-grid{grid-template-columns:1fr;}
+  .map-panel{min-height:420px;order:-1;}
+  .bottom-strip{grid-template-columns:1fr 1fr;}
+  .nav-links{display:none;}
+}
+@media(max-width:520px){
+  .hero h1{font-size:1.8rem;}
+  .bottom-strip{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <nav>
+    <a class="logo" href="#"><div class="logo-mark">SE</div>SEESEC</a>
+    <div class="nav-links">
+      <a href="#">Home</a><a href="#">Services</a><a href="#">About</a><a href="#" class="active">Infrastructure</a>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-tag">System Architecture Topology</div>
+    <h1>Regional Operations &<br><em>Infrastructure</em> Nodes</h1>
+    <p>Real-time node cluster sync between our Signature Tower Head Office and core Regional Operation structures across North-Western territories.</p>
+  </div>
+
+  <div class="main-grid">
+    <div class="map-panel">
+      <div class="map-container" style="position:relative;">
+        <canvas id="indiaMapCanvas" width="900" height="700" style="width:100%; height:auto; display:block;"></canvas>
+        <div class="map-overlay"></div>
+        <div class="map-badge" id="mapBadgeBox">
+          <div class="gb-label">📍 LOCATION OVERVIEW</div>
+          <div class="gb-val" id="badgeTitle">Gurugram (HO)</div>
+          <div class="gb-sub" id="badgeSub">Signature Tower 3, Sec-15<br>28.461° N, 77.052° E</div>
+        </div>
+        <div class="map-hint">⚡ Click nodes or cards for details</div>
+      </div>
+    </div>
+
+    <div class="contact-panel">
+      <div class="info-card active-card" id="card-ho" data-node="ho">
+        <div class="ic-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
+        <div class="ic-body"><div class="ic-label">Head Office</div><div class="ic-val">Signature Tower 3</div><div class="ic-meta">Sec-15, Gurugram</div></div>
+      </div>
+      <div class="info-card" id="card-ro1" data-node="ro1">
+        <div class="ic-icon"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
+        <div class="ic-body"><div class="ic-label">Regional Office 1</div><div class="ic-val">Shivbari Road</div><div class="ic-meta">Bikaner, Rajasthan</div></div>
+      </div>
+      <div class="info-card" id="card-ro2" data-node="ro2">
+        <div class="ic-icon"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
+        <div class="ic-body"><div class="ic-label">Regional Office 2</div><div class="ic-val">Sanskar Chand Road</div><div class="ic-meta">Jaipur, Rajasthan</div></div>
+      </div>
+      <div class="hours-card">
+        <div class="hc-title">⏱️ SYNCHRONIZATION RUNTIME</div>
+        <div class="hc-row"><span class="hc-day">Mainframe Pipeline</span><span class="hc-time">24 / 7 Live Monitoring</span></div>
+        <div class="hc-row"><span class="hc-day">Regional Gateways</span><span class="hc-time" style="color:var(--accent2)">Active Sync</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-strip">
+    <div class="bs-item"><div class="bs-val">3 ms</div><div class="bs-label">HO to Jaipur Core Edge Latency</div></div>
+    <div class="bs-item"><div class="bs-val">4.8 ms</div><div class="bs-label">HO to Bikaner Node Latency</div></div>
+    <div class="bs-item"><div class="bs-val">99.99%</div><div class="bs-label">Infrastructure Backbone Uptime</div></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // FIXED: Works reliably on Vercel - no external APIs, robust click detection
+  const canvas = document.getElementById('indiaMapCanvas');
+  if (!canvas) return;
+  
+  // Set explicit dimensions
+  const CANVAS_W = 900;
+  const CANVAS_H = 700;
+  canvas.width = CANVAS_W;
+  canvas.height = CANVAS_H;
+  
+  const ctx = canvas.getContext('2d');
+  
+  const MIN_LAT = 6.5, MAX_LAT = 36.5, MIN_LON = 67.5, MAX_LON = 98.0;
+  
+  function latLonToPixel(lat, lon) {
+    return {
+      x: ((lon - MIN_LON) / (MAX_LON - MIN_LON)) * CANVAS_W,
+      y: ((MAX_LAT - lat) / (MAX_LAT - MIN_LAT)) * CANVAS_H
+    };
+  }
+  
+  // India outline
+  const indiaOutline = [
+    {lat: 34.7, lon: 73.8}, {lat: 35.6, lon: 74.0}, {lat: 36.3, lon: 74.6}, 
+    {lat: 35.8, lon: 76.2}, {lat: 35.1, lon: 77.3}, {lat: 34.6, lon: 78.8}, 
+    {lat: 33.5, lon: 79.1}, {lat: 32.5, lon: 78.4}, {lat: 31.8, lon: 78.9},
+    {lat: 31.0, lon: 78.1}, {lat: 30.1, lon: 79.6}, {lat: 29.6, lon: 80.3}, 
+    {lat: 28.5, lon: 80.4}, {lat: 28.2, lon: 81.5}, {lat: 27.4, lon: 83.2}, 
+    {lat: 27.2, lon: 84.9}, {lat: 26.4, lon: 86.0}, {lat: 26.3, lon: 87.3}, 
+    {lat: 26.9, lon: 88.1}, {lat: 28.1, lon: 88.6}, {lat: 27.1, lon: 88.9}, 
+    {lat: 26.7, lon: 89.9}, {lat: 27.4, lon: 91.6}, {lat: 27.9, lon: 91.9}, 
+    {lat: 28.6, lon: 94.1}, {lat: 28.1, lon: 96.3}, {lat: 28.2, lon: 97.4}, 
+    {lat: 27.0, lon: 97.1}, {lat: 25.8, lon: 95.3}, {lat: 24.3, lon: 94.6}, 
+    {lat: 22.3, lon: 93.3}, {lat: 21.8, lon: 92.7}, {lat: 23.1, lon: 91.4}, 
+    {lat: 24.4, lon: 92.3}, {lat: 25.3, lon: 92.4}, {lat: 25.1, lon: 89.9}, 
+    {lat: 26.1, lon: 89.7}, {lat: 24.9, lon: 88.9}, {lat: 22.3, lon: 88.9}, 
+    {lat: 21.5, lon: 88.1}, {lat: 21.4, lon: 86.9}, {lat: 20.1, lon: 86.4}, 
+    {lat: 19.2, lon: 84.8}, {lat: 17.4, lon: 83.3}, {lat: 15.9, lon: 81.1}, 
+    {lat: 13.9, lon: 80.3}, {lat: 13.0, lon: 80.4}, {lat: 11.4, lon: 79.7}, 
+    {lat: 10.2, lon: 79.9}, {lat: 9.1, lon: 79.1}, {lat: 8.0, lon: 77.4}, 
+    {lat: 9.4, lon: 76.2}, {lat: 11.1, lon: 75.7}, {lat: 12.6, lon: 74.7}, 
+    {lat: 14.4, lon: 74.2}, {lat: 15.6, lon: 73.6}, {lat: 17.1, lon: 73.2}, 
+    {lat: 19.1, lon: 72.7}, {lat: 20.2, lon: 72.7}, {lat: 21.1, lon: 72.4}, 
+    {lat: 20.7, lon: 70.9}, {lat: 21.6, lon: 69.1}, {lat: 22.9, lon: 69.9}, 
+    {lat: 23.1, lon: 68.4}, {lat: 23.9, lon: 68.1}, {lat: 24.3, lon: 70.4}, 
+    {lat: 24.6, lon: 71.4}, {lat: 25.6, lon: 70.1}, {lat: 27.1, lon: 69.4}, 
+    {lat: 28.6, lon: 70.2}, {lat: 30.1, lon: 71.9}, {lat: 31.1, lon: 74.1}, 
+    {lat: 32.6, lon: 74.7}, {lat: 33.6, lon: 73.9}
+  ];
+  
+  const nodes = {
+    ho: { name: "Head Office", shortName: "Gurugram (HO)", sub: "Signature Tower 3, Sec-15", lat: 28.461, lon: 77.052, address: "Signature Tower 3, Sector 15, Gurugram, Haryana - 122001", region: "National Capital Region" },
+    ro1: { name: "Regional Office 1", shortName: "Bikaner", sub: "Shivbari Road, Bikaner", lat: 28.002, lon: 73.360, address: "Shivbari Road, Bikaner, Rajasthan - 334001", region: "Bikaner Zone" },
+    ro2: { name: "Regional Office 2", shortName: "Jaipur", sub: "Sanskar Chand Road, Jaipur", lat: 26.924, lon: 75.803, address: "Sanskar Chand Road, Jaipur, Rajasthan - 302001", region: "Jaipur Metro Zone" }
+  };
+  
+  let activeNodeId = 'ho';
+  
+  function showLocationDetails(nodeId) {
+    const node = nodes[nodeId];
+    if (!node) return;
+    
+    // Remove existing modal
+    const existing = document.querySelector('.custom-modal-overlay');
+    if (existing) existing.remove();
+    
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-modal-overlay';
+    overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(2,6,13,0.95);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;z-index:10000;`;
+    
+    const modal = document.createElement('div');
+    modal.style.cssText = `background:#060d1a;border:1px solid rgba(0,229,192,0.4);border-radius:28px;max-width:460px;width:90%;padding:24px;box-shadow:0 30px 60px rgba(0,0,0,0.8);border-top:3px solid #00e5c0;`;
+    
+    modal.innerHTML = `
+      <div style="display:flex;justify-content:space-between;margin-bottom:18px;">
+        <span style="font-family:monospace;font-size:0.7rem;color:#00e5c0;">🔗 SEESEC NODE</span>
+        <button id="closeModalBtn" style="background:none;border:none;color:#6b7fa0;font-size:26px;cursor:pointer;">&times;</button>
+      </div>
+      <div style="font-size:1.5rem;font-weight:700;margin-bottom:16px;">${node.name}</div>
+      <div style="background:#0a1528;border-radius:18px;padding:16px;margin-bottom:20px;">
+        <div style="margin-bottom:10px;"><strong>📍 Address:</strong> ${node.address}</div>
+        <div style="margin-bottom:10px;"><strong>🌐 Coordinates:</strong> ${node.lat.toFixed(4)}° N, ${node.lon.toFixed(4)}° E</div>
+        <div><strong>🗺️ Region:</strong> ${node.region}</div>
+      </div>
+      <div style="font-size:0.7rem;color:#4a5a78;text-align:center;">Infrastructure Gateway • Active Sync</div>
+    `;
+    
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    document.getElementById('closeModalBtn').onclick = () => overlay.remove();
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  }
+  
+  function drawMap() {
+    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+    ctx.fillStyle = '#030914';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    
+    // Grid
+    ctx.strokeStyle = 'rgba(0,229,192,0.02)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < CANVAS_W; i += 35) {
+      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, CANVAS_H); ctx.stroke();
+    }
+    for (let j = 0; j < CANVAS_H; j += 35) {
+      ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(CANVAS_W, j); ctx.stroke();
+    }
+    
+    // India outline
+    ctx.beginPath();
+    indiaOutline.forEach((pt, idx) => {
+      const { x, y } = latLonToPixel(pt.lat, pt.lon);
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.fillStyle = '#0a1f38';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,229,192,0.4)';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    
+    // Connection lines
+    const hoPos = latLonToPixel(nodes.ho.lat, nodes.ho.lon);
+    const ro1Pos = latLonToPixel(nodes.ro1.lat, nodes.ro1.lon);
+    const ro2Pos = latLonToPixel(nodes.ro2.lat, nodes.ro2.lon);
+    
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(hoPos.x, hoPos.y); ctx.lineTo(ro1Pos.x, ro1Pos.y);
+    ctx.strokeStyle = activeNodeId === 'ro1' ? '#00e5c0' : 'rgba(0,153,255,0.3)';
+    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(hoPos.x, hoPos.y); ctx.lineTo(ro2Pos.x, ro2Pos.y);
+    ctx.strokeStyle = activeNodeId === 'ro2' ? '#00e5c0' : 'rgba(0,153,255,0.3)';
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Draw nodes
+    Object.keys(nodes).forEach(key => {
+      const node = nodes[key];
+      const pos = latLonToPixel(node.lat, node.lon);
+      const isActive = activeNodeId === key;
+      const radius = key === 'ho' ? 10 : 8;
+      
+      if (isActive) {
+        ctx.shadowBlur = 25;
+        ctx.shadowColor = key === 'ho' ? '#00e5c0' : '#0099ff';
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, radius + 6, 0, Math.PI * 2);
+        ctx.strokeStyle = key === 'ho' ? 'rgba(0,229,192,0.5)' : 'rgba(0,153,255,0.5)';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+      
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = key === 'ho' ? '#00e5c0' : '#0099ff';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#02060d';
+      ctx.fill();
+      
+      ctx.font = "bold 11px system-ui, monospace";
+      ctx.fillStyle = isActive ? '#fff' : '#a0b0d0';
+      ctx.fillText(key === 'ho' ? "⚡ HO" : key.toUpperCase(), pos.x + 14, pos.y - 4);
+      ctx.font = "9px monospace";
+      ctx.fillStyle = isActive ? '#00e5c0' : '#6b7fa0';
+      ctx.fillText(key === 'ho' ? "Gurugram" : (key === 'ro1' ? "Bikaner" : "Jaipur"), pos.x + 14, pos.y + 8);
+    });
+  }
+  
+  // Pulse animation
+  let animFrame;
+  function animate() {
+    drawMap();
+    const activeNode = nodes[activeNodeId];
+    if (activeNode) {
+      const pos = latLonToPixel(activeNode.lat, activeNode.lon);
+      const pulse = 12 + (Date.now() % 1000) / 35;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, pulse, 0, Math.PI * 2);
+      ctx.strokeStyle = activeNodeId === 'ho' ? `rgba(0,229,192,0.5)` : `rgba(0,153,255,0.5)`;
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+    }
+    animFrame = requestAnimationFrame(animate);
+  }
+  
+  // FIXED CLICK DETECTION - works reliably on Vercel
+  function handleCanvasClick(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    let clientX, clientY;
+    if (e.touches) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    
+    const clickX = (clientX - rect.left) * scaleX;
+    const clickY = (clientY - rect.top) * scaleY;
+    
+    if (clickX >= 0 && clickX <= canvas.width && clickY >= 0 && clickY <= canvas.height) {
+      for (const [id, node] of Object.entries(nodes)) {
+        const pos = latLonToPixel(node.lat, node.lon);
+        const dist = Math.hypot(clickX - pos.x, clickY - pos.y);
+        if (dist < 25) {
+          setActiveNode(id);
+          showLocationDetails(id);
+          break;
+        }
+      }
+    }
+  }
+  
+  function setActiveNode(id) {
+    activeNodeId = id;
+    document.querySelectorAll('.info-card').forEach(card => card.classList.remove('active-card'));
+    const targetCard = document.getElementById(`card-${id}`);
+    if (targetCard) targetCard.classList.add('active-card');
+    const node = nodes[id];
+    if (node) {
+      document.getElementById('badgeTitle').innerText = node.shortName;
+      document.getElementById('badgeSub').innerHTML = `${node.sub}<br>${node.lat.toFixed(3)}° N, ${node.lon.toFixed(3)}° E`;
+    }
+  }
+  
+  function handleCardClick(id) {
+    setActiveNode(id);
+    showLocationDetails(id);
+  }
+  
+  // Event listeners
+  canvas.addEventListener('click', handleCanvasClick);
+  canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleCanvasClick(e); });
+  
+  document.getElementById('card-ho').onclick = () => handleCardClick('ho');
+  document.getElementById('card-ro1').onclick = () => handleCardClick('ro1');
+  document.getElementById('card-ro2').onclick = () => handleCardClick('ro2');
+  document.getElementById('mapBadgeBox').onclick = () => showLocationDetails(activeNodeId);
+  
+  // Initialize
+  setActiveNode('ho');
+  animate();
+})();
+</script>
+</body>
+</html>
