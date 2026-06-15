@@ -307,13 +307,13 @@ nav{
       <div class="map-container">
         <canvas id="indiaMapCanvas" width="1000" height="780"></canvas>
         <div class="map-overlay"></div>
-        <div class="map-badge" id="mapBadgeBox" onclick="openGoogleMaps(activeNodeId)">
-          <div class="gb-label" id="badgeLabel">📍 Location Map View</div>
+        <div class="map-badge" id="mapBadgeBox">
+          <div class="gb-label" id="badgeLabel">📍 Current Location</div>
           <div class="gb-val" id="badgeTitle">Gurugram (HO)</div>
           <div class="gb-sub" id="badgeSub">Signature Tower 3, Sec-15<br>28.461° N, 77.052° E</div>
         </div>
         <div class="map-hint">
-          ⚡ Click focused nodes or info badge to launch Google Maps
+          ⚡ Click on any node to view details
         </div>
       </div>
     </div>
@@ -326,7 +326,7 @@ nav{
         <div class="ic-body">
           <div class="ic-label">Head Office</div>
           <div class="ic-val">Signature Tower 3</div>
-          <div class="ic-meta">Sec-15, Gurugram · Click to view Google Maps</div>
+          <div class="ic-meta">Sec-15, Gurugram · Click for details</div>
         </div>
       </div>
 
@@ -337,7 +337,7 @@ nav{
         <div class="ic-body">
           <div class="ic-label">Regional Office 1</div>
           <div class="ic-val">Shivbari Road</div>
-          <div class="ic-meta">Bikaner, Rajasthan · Click to view Google Maps</div>
+          <div class="ic-meta">Bikaner, Rajasthan · Click for details</div>
         </div>
       </div>
 
@@ -348,7 +348,7 @@ nav{
         <div class="ic-body">
           <div class="ic-label">Regional Office 2</div>
           <div class="ic-val">Sanskar Chand Road</div>
-          <div class="ic-meta">Jaipur, Rajasthan · Click to view Google Maps</div>
+          <div class="ic-meta">Jaipur, Rajasthan · Click for details</div>
         </div>
       </div>
 
@@ -440,24 +440,29 @@ const nodes = {
     id: "ho",
     name: "Head Office — Gurugram",
     sub: "Signature Tower 3, Sec-15, Gurugram",
-    lat: 28.461, lon: 77.052,
-    googleMaps: "https://www.google.com/maps/search/?api=1&query=Signature+Tower+3+Gurugram"
+    lat: 28.461, lon: 77.052
   },
   ro1: {
     id: "ro1",
     name: "Regional Office 1 — Bikaner",
     sub: "Shivbari Road, Bikaner",
-    lat: 28.002, lon: 73.360,
-    googleMaps: "https://www.google.com/maps/search/?api=1&query=Shivbari+Road+Bikaner"
+    lat: 28.002, lon: 73.360
   },
   ro2: {
     id: "ro2",
     name: "Regional Office 2 — Jaipur",
     sub: "Sanskar Chand Road, Jaipur",
-    lat: 26.924, lon: 75.803,
-    googleMaps: "https://www.google.com/maps/search/?api=1&query=Sanskar+Chand+Road+Jaipur"
+    lat: 26.924, lon: 75.803
   }
 };
+
+// Simple alert for node details (replaces Google Maps)
+function showNodeDetails(id) {
+  const node = nodes[id];
+  if (node) {
+    alert(`📍 ${node.name}\n\nAddress: ${node.sub}\nCoordinates: ${node.lat.toFixed(3)}° N, ${node.lon.toFixed(3)}° E\n\nInfrastructure Node Status: Active ✓\nNetwork Latency: ${id === 'ho' ? '0 ms' : (id === 'ro1' ? '4.8 ms' : '3 ms')}\nSync Status: Real-time`);
+  }
+}
 
 function drawBackgroundGrid(w, h) {
   ctx.strokeStyle = 'rgba(0, 229, 192, 0.015)';
@@ -579,19 +584,13 @@ function animateSystemLoop() {
   requestAnimationFrame(animateSystemLoop);
 }
 
-// Open Google Maps feature function
-function openGoogleMaps(id) {
-  const node = nodes[id];
-  if (node && node.googleMaps) {
-    window.open(node.googleMaps, '_blank');
-  }
-}
-
 // Click detection on canvas
 canvas.addEventListener('click', (e) => {
   const rect = canvas.getBoundingClientRect();
-  const clickX = e.clientX - rect.left;
-  const clickY = e.clientY - rect.top;
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const clickX = (e.clientX - rect.left) * scaleX;
+  const clickY = (e.clientY - rect.top) * scaleY;
 
   // Check distance to each node
   for (const key in nodes) {
@@ -599,9 +598,9 @@ canvas.addEventListener('click', (e) => {
     const pos = latLonToPixel(node.lat, node.lon);
     const dist = Math.hypot(clickX - pos.x, clickY - pos.y);
     
-    if (dist < 25) {  // Click radius
+    if (dist < 25) {
       focusNode(key);
-      openGoogleMaps(key);
+      showNodeDetails(key);
       return;
     }
   }
@@ -609,19 +608,25 @@ canvas.addEventListener('click', (e) => {
 
 function handleCardClick(id) {
   focusNode(id);
-  openGoogleMaps(id);
+  showNodeDetails(id);
 }
 
 function focusNode(id) {
   activeNodeId = id;
   
   document.querySelectorAll('.info-card').forEach(card => card.classList.remove('active-card'));
-  document.getElementById(`card-${id}`).classList.add('active-card');
+  const targetCard = document.getElementById(`card-${id}`);
+  if (targetCard) targetCard.classList.add('active-card');
 
   const node = nodes[id];
   document.getElementById('badgeTitle').innerText = node.name.split(' — ')[1] + (node.id === 'ho' ? ' (HO)' : '');
   document.getElementById('badgeSub').innerHTML = `${node.sub}<br>${node.lat.toFixed(3)}° N, ${node.lon.toFixed(3)}° E`;
 }
+
+// Make map badge clickable to show current node details
+document.getElementById('mapBadgeBox').addEventListener('click', function() {
+  showNodeDetails(activeNodeId);
+});
 
 // Initialize
 focusNode('ho');
